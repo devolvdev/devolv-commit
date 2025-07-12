@@ -1,0 +1,17 @@
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devolv-commit"
+version = "0.1.0"
+description = "Generate human-friendly Git commit messages from staged changes"
+readme = "README.md"
+requires-python = ">=3.7"
+authors = [{ name="Your Name", email="you@example.com" }]
+keywords = ["git", "commit", "automation", "cli"]
+license = { text = "MIT" }
+
+[project.scripts]
+devolv-commit = "devolv_commit.cli:main"
