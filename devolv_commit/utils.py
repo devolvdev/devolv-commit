@@ -45,7 +45,10 @@ def filter_diff_lines(changes):
     return plus_lines, minus_lines
 
 def plural(word, count):
+    if word == "class" and count != 1:
+        return "classes"
     return f"{word}s" if count != 1 else word
+
 
 def format_list(items):
     if not items:

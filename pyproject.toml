@@ -4,14 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "devolv-commit"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Generate human-friendly Git commit messages from staged changes"
 readme = "README.md"
 requires-python = ">=3.7"
-authors = [{ name="Devolvdev", email="devolv.dev@gmail.com" }]
+authors = [{ name = "Devolvdev", email = "devolv.dev@gmail.com" }]
 keywords = ["git", "commit", "automation", "cli"]
 license = { text = "MIT" }
 
-[project.scripts]
-git-dc = "devolv_commit.cli:app"
+[tool.setuptools.dynamic]
+version = { attr = "devolv_commit.__version__" }
 
+[project.scripts]
+devolv-commit = "devolv_commit.cli:app"
+git-dc = "devolv_commit.cli:app"
