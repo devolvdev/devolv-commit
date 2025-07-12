@@ -41,10 +41,12 @@ def install_hook():
 @app.callback(invoke_without_command=True)
 def default(ctx: typer.Context):
     """
-    If no subcommand is provided, default to running a commit directly.
+    If no subcommand is provided (e.g., `git dc`), auto-commit directly.
     """
     if ctx.invoked_subcommand is None:
-        commit()
+        # Bypass CLI parsing to force auto-commit behavior
+        commit(print_only=False)
+
 
 if __name__ == "__main__":
     app()
