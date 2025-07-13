@@ -1,6 +1,8 @@
 import subprocess
 from .utils import parse_diff
 
+MAX_LENGTH = 72  # for GitHub UI preview
+
 def generate_commit_message():
     """
     Generate a professional Conventional Commit–style Git commit message from staged changes.
@@ -27,25 +29,37 @@ def generate_commit_message():
             seen.add(key)
             deduped.append(key)
 
-    # Group by type for Conventional Commit style
+    # Group by type
     grouped = {}
     for typ, msg in deduped:
         grouped.setdefault(typ, []).append(msg)
 
-    # If only one type, use it in subject
     if len(grouped) == 1:
-        (typ, messages) = list(grouped.items())[0]
+        typ, messages = next(iter(grouped.items()))
+        scope = infer_scope(messages)
         if len(messages) == 1:
-            return f"{typ}: {messages[0].rstrip('.')}."
-        elif len(messages) == 2:
-            return f"{typ}: {messages[0]} and {messages[1]}."
+            base = f"{typ}({scope}): {messages[0]}"
         elif len(messages) <= 4:
-            return f"{typ}: {', '.join(messages[:-1])}, and {messages[-1]}."
+            base = f"{typ}({scope}): {', '.join(messages[:-1])}, and {messages[-1]}"
         else:
-            return f"{typ}: multiple changes.\n" + "\n".join(f"- {m}." for m in messages[:5]) + "\n- ...and more"
+            base = f"{typ}({scope}): multiple changes\n" + "\n".join(f"- {m}." for m in messages[:5]) + "\n- ...and more"
+        return truncate_line(base)
 
-    # Multiple types → show bullet points
-    bullets = [f"- {typ}: {msg}." for typ, msg in deduped[:6]]
+    bullets = [f"- {typ}({infer_scope([msg])}): {msg}." for typ, msg in deduped[:6]]
     if len(deduped) > 6:
         bullets.append("- ...and more")
     return "Summary of changes:\n" + "\n".join(bullets)
+
+def infer_scope(messages):
+    # Try extracting scope from file/module name in message
+    for msg in messages:
+        if "`" in msg:
+            parts = msg.split("`")
+            if len(parts) >= 2:
+                return parts[1].replace(".py", "")
+    return "core"
+
+def truncate_line(text):
+    if "\n" in text:
+        return text
+    return text if len(text) <= MAX_LENGTH else text[:MAX_LENGTH].rstrip() + "..."

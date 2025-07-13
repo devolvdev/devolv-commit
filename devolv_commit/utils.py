@@ -102,7 +102,6 @@ def parse_diff(diff_text):
         del_file = any("deleted file mode" in l for l in changes)
 
         plus, minus = filter_diff_lines(changes)
-
         a_cls, a_func, a_meth, a_const = detect_symbols(plus)
         r_cls, r_func, r_meth, r_const = detect_symbols(minus)
 
