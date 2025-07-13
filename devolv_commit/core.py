@@ -3,8 +3,7 @@ from .utils import parse_diff
 
 def generate_commit_message():
     """
-    Generate a professional and structured Git commit message from staged changes.
-    Deduplicates, prioritizes by type, and formats clearly.
+    Generate a professional Conventional Commit–style Git commit message from staged changes.
     """
     try:
         result = subprocess.run(["git", "diff", "--cached"], capture_output=True, text=True, check=True)
@@ -21,39 +20,32 @@ def generate_commit_message():
 
     # Deduplicate while preserving order
     seen = set()
-    unique_actions = []
-    for action in actions:
-        normalized = action.rstrip(".")
-        if normalized not in seen:
-            seen.add(normalized)
-            unique_actions.append(normalized)
+    deduped = []
+    for typ, msg in actions:
+        key = (typ, msg.rstrip("."))
+        if key not in seen:
+            seen.add(key)
+            deduped.append(key)
 
-    # Prioritize common verbs
-    def priority(action):
-        a = action.lower()
-        if a.startswith("removed"): return 0
-        if a.startswith("deleted"): return 1
-        if a.startswith("added"): return 2
-        if a.startswith("created"): return 3
-        if a.startswith("defined"): return 4
-        if a.startswith("updated"): return 5
-        if a.startswith("refactored"): return 6
-        if a.startswith("extended"): return 7
-        if a.startswith("cleaned"): return 8
-        return 9
+    # Group by type for Conventional Commit style
+    grouped = {}
+    for typ, msg in deduped:
+        grouped.setdefault(typ, []).append(msg)
 
-    sorted_actions = sorted(unique_actions, key=priority)
+    # If only one type, use it in subject
+    if len(grouped) == 1:
+        (typ, messages) = list(grouped.items())[0]
+        if len(messages) == 1:
+            return f"{typ}: {messages[0].rstrip('.')}."
+        elif len(messages) == 2:
+            return f"{typ}: {messages[0]} and {messages[1]}."
+        elif len(messages) <= 4:
+            return f"{typ}: {', '.join(messages[:-1])}, and {messages[-1]}."
+        else:
+            return f"{typ}: multiple changes.\n" + "\n".join(f"- {m}." for m in messages[:5]) + "\n- ...and more"
 
-    # Format output professionally
-    count = len(sorted_actions)
-
-    if count == 1:
-        return sorted_actions[0] + "."
-    elif count == 2:
-        return f"{sorted_actions[0]} and {sorted_actions[1]}."
-    elif count <= 4:
-        return ", ".join(sorted_actions[:-1]) + f", and {sorted_actions[-1]}."
-    else:
-        bullets = [f"- {a}." for a in sorted_actions[:5]]
+    # Multiple types → show bullet points
+    bullets = [f"- {typ}: {msg}." for typ, msg in deduped[:6]]
+    if len(deduped) > 6:
         bullets.append("- ...and more")
-        return "Summary of changes:\n" + "\n".join(bullets)
+    return "Summary of changes:\n" + "\n".join(bullets)

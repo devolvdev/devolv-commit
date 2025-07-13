@@ -49,7 +49,6 @@ def plural(word, count):
         return "classes"
     return f"{word}s" if count != 1 else word
 
-
 def format_list(items):
     if not items:
         return ""
@@ -64,8 +63,7 @@ def method_group(pairs):
     return grouped.items()
 
 def detect_symbols(lines):
-    classes, funcs, methods = [], [], []
-    constants = []
+    classes, funcs, methods, constants = [], [], [], []
     current_class = None
 
     for line in lines:
@@ -105,53 +103,53 @@ def parse_diff(diff_text):
 
         plus, minus = filter_diff_lines(changes)
 
-        if is_test:
-            if new_file:
-                actions.append(f"Added new test file `{base}`.")
-            elif plus and minus:
-                actions.append(f"Updated tests in `{base}`.")
-            elif plus:
-                actions.append(f"Added tests in `{base}`.")
-            elif minus:
-                actions.append(f"Removed tests from `{base}`.")
-            continue
-
-        if new_file:
-            actions.append(f"Introduced new module `{module}`.")
-            continue
-        if del_file:
-            actions.append(f"Removed module `{module}`.")
-            continue
-
         a_cls, a_func, a_meth, a_const = detect_symbols(plus)
         r_cls, r_func, r_meth, r_const = detect_symbols(minus)
 
+        if is_test:
+            if new_file:
+                actions.append(("test", f"add new test file `{base}`"))
+            elif plus and minus:
+                actions.append(("test", f"update tests in `{base}`"))
+            elif plus:
+                actions.append(("test", f"add tests in `{base}`"))
+            elif minus:
+                actions.append(("test", f"remove tests from `{base}`"))
+            continue
+
+        if new_file:
+            actions.append(("feat", f"introduce new module `{module}`"))
+            continue
+        if del_file:
+            actions.append(("refactor", f"remove module `{module}`"))
+            continue
+
         if a_cls:
-            actions.append(f"Added {plural('class', len(a_cls))} {format_list(a_cls)} in `{module}`.")
+            actions.append(("feat", f"add {plural('class', len(a_cls))} {format_list(a_cls)} in `{module}`"))
         if r_cls:
-            actions.append(f"Removed {plural('class', len(r_cls))} {format_list(r_cls)} from `{module}`.")
+            actions.append(("refactor", f"remove {plural('class', len(r_cls))} {format_list(r_cls)} from `{module}`"))
 
         if a_func:
-            actions.append(f"Added {plural('function', len(a_func))} {format_list(a_func)} in `{module}`.")
+            actions.append(("feat", f"add {plural('function', len(a_func))} {format_list(a_func)} in `{module}`"))
         if r_func:
-            actions.append(f"Removed {plural('function', len(r_func))} {format_list(r_func)} from `{module}`.")
+            actions.append(("refactor", f"remove {plural('function', len(r_func))} {format_list(r_func)} from `{module}`"))
 
         for cls, methods in method_group(a_meth):
-            actions.append(f"Added {plural('method', len(methods))} {format_list(methods)} to class `{cls}` in `{module}`.")
+            actions.append(("feat", f"add {plural('method', len(methods))} {format_list(methods)} to class `{cls}` in `{module}`"))
         for cls, methods in method_group(r_meth):
-            actions.append(f"Removed {plural('method', len(methods))} {format_list(methods)} from class `{cls}` in `{module}`.")
+            actions.append(("refactor", f"remove {plural('method', len(methods))} {format_list(methods)} from class `{cls}` in `{module}`"))
 
         if a_const:
-            actions.append(f"Defined new {plural('constant', len(a_const))} {format_list(a_const)} in `{module}`.")
+            actions.append(("feat", f"define new {plural('constant', len(a_const))} {format_list(a_const)} in `{module}`"))
         if r_const:
-            actions.append(f"Removed {plural('constant', len(r_const))} {format_list(r_const)} from `{module}`.")
+            actions.append(("refactor", f"remove {plural('constant', len(r_const))} {format_list(r_const)} from `{module}`"))
 
         if not any([a_cls, r_cls, a_func, r_func, a_meth, r_meth, a_const, r_const]):
             if plus and minus:
-                actions.append(f"Refactored logic in `{module}`.")
+                actions.append(("refactor", f"refactor logic in `{module}`"))
             elif plus:
-                actions.append(f"Extended logic in `{module}`.")
+                actions.append(("feat", f"extend logic in `{module}`"))
             elif minus:
-                actions.append(f"Cleaned up logic in `{module}`.")
+                actions.append(("chore", f"clean up logic in `{module}`"))
 
     return actions
